@@ -1,8 +1,14 @@
 FROM php:8.2-cli
 
-# System deps
+# Install system dependencies (IMPORTANT: libpq-dev added)
 RUN apt-get update && apt-get install -y \
-    git unzip curl libzip-dev nodejs npm \
+    git \
+    unzip \
+    curl \
+    libzip-dev \
+    libpq-dev \
+    nodejs \
+    npm \
     && docker-php-ext-install zip pdo pdo_mysql pdo_pgsql
 
 # Install Composer
@@ -10,13 +16,13 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Copy project
+# Copy project files
 COPY . .
 
-# Install PHP deps
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Install Node deps & build assets
+# Install Node deps & build frontend
 RUN npm install && npm run build
 
 EXPOSE 10000

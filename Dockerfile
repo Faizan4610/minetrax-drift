@@ -1,15 +1,22 @@
 FROM php:8.2-cli
 
-# System dependencies (Postgres headers INCLUDED)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
     curl \
     libzip-dev \
     libpq-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libwebp-dev \
     nodejs \
     npm \
-    && docker-php-ext-install zip pdo pdo_pgsql
+    && docker-php-ext-install \
+        zip \
+        pdo \
+        pdo_pgsql \
+        exif
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

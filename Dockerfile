@@ -1,6 +1,8 @@
 FROM php:8.2-cli
 
-# Install system dependencies
+# ----------------------------
+# System dependencies
+# ----------------------------
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -10,28 +12,60 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libpng-dev \
     libwebp-dev \
+    libicu-dev \
+    libonig-dev \
     nodejs \
     npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# ----------------------------
+# PHP extensions (FULL SET)
+# ----------------------------
+RUN docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install \
         zip \
         pdo \
         pdo_pgsql \
-        exif
+        exif \
+        sockets \
+        bcmath \
+        intl \
+        gd
 
-# Install Composer
+# ----------------------------
+# Composer
+# ----------------------------
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# ----------------------------
+# App setup
+# ----------------------------
 WORKDIR /app
-
-# Copy project files
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader -vvv
+# ----------------------------
+# Laravel permissions (important)
+# ----------------------------
+RUN chown -R www-data:www-data storage bootstrap/cache || true
 
-# Install Node deps & build frontend
+# ----------------------------
+# Install backend deps
+# ----------------------------
+RUN composer install --no-dev --optimize-autoloader
+
+# ----------------------------
+# Build frontend (Vite)
+# ----------------------------
 RUN npm install && npm run build
 
+# ----------------------------
+# Expose Render port
+# ----------------------------
 EXPOSE 10000
 
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=10000
+# ----------------------------
+# Start app
+# ----------------------------
+CMD php artisan key:generate --force \
+ && php artisan migrate --force \
+ && php artisan serve --host=0.0.0.0 --port=10000

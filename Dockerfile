@@ -44,11 +44,11 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY . .
 
-# Laravel writable dirs
+# Writable dirs for Laravel
 RUN chown -R www-data:www-data storage bootstrap/cache || true
 
 # ----------------------------
-# Backend dependencies ONLY
+# Install backend dependencies
 # ----------------------------
 RUN composer install --no-dev --optimize-autoloader
 
@@ -58,8 +58,7 @@ RUN composer install --no-dev --optimize-autoloader
 EXPOSE 8080
 
 # ----------------------------
-# Start MineTrax
+# Start MineTrax (NO key:generate)
 # ----------------------------
-CMD php artisan key:generate --force \
- && php artisan migrate --force \
+CMD php artisan migrate --force \
  && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}

@@ -14,12 +14,13 @@ RUN apt-get update && apt-get install -y \
     libwebp-dev \
     libicu-dev \
     libonig-dev \
+    libsodium-dev \
     nodejs \
     npm \
     && rm -rf /var/lib/apt/lists/*
 
 # ----------------------------
-# PHP extensions (FULL SET)
+# PHP extensions (FULL + REQUIRED)
 # ----------------------------
 RUN docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install \
@@ -30,7 +31,8 @@ RUN docker-php-ext-configure gd --with-jpeg --with-webp \
         sockets \
         bcmath \
         intl \
-        gd
+        gd \
+        sodium
 
 # ----------------------------
 # Composer
@@ -38,14 +40,11 @@ RUN docker-php-ext-configure gd --with-jpeg --with-webp \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # ----------------------------
-# App setup
+# App
 # ----------------------------
 WORKDIR /app
 COPY . .
 
-# ----------------------------
-# Laravel permissions (important)
-# ----------------------------
 RUN chown -R www-data:www-data storage bootstrap/cache || true
 
 # ----------------------------
@@ -54,17 +53,14 @@ RUN chown -R www-data:www-data storage bootstrap/cache || true
 RUN composer install --no-dev --optimize-autoloader
 
 # ----------------------------
-# Build frontend (Vite)
+# Build frontend
 # ----------------------------
 RUN npm install && npm run build
 
-# ----------------------------
-# Expose Render port
-# ----------------------------
 EXPOSE 10000
 
 # ----------------------------
-# Start app
+# Start
 # ----------------------------
 CMD php artisan key:generate --force \
  && php artisan migrate --force \

@@ -1,6 +1,8 @@
-FROM php:8.2-fpm
+FROM php:8.3-fpm
 
-# System deps
+# ----------------------------
+# System dependencies
+# ----------------------------
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -17,7 +19,9 @@ RUN apt-get update && apt-get install -y \
     npm \
     && rm -rf /var/lib/apt/lists/*
 
-# PHP extensions (MineTrax required)
+# ----------------------------
+# PHP extensions (ALL REQUIRED)
+# ----------------------------
 RUN docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install \
         pdo \
@@ -27,23 +31,38 @@ RUN docker-php-ext-configure gd --with-jpeg --with-webp \
         intl \
         bcmath \
         gd \
-        sodium
+        sodium \
+        sockets \
+        ftp
 
+# ----------------------------
 # Composer
+# ----------------------------
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# ----------------------------
+# App setup
+# ----------------------------
 WORKDIR /app
 COPY . .
 
 RUN chown -R www-data:www-data storage bootstrap/cache || true
 
+# ----------------------------
 # Backend deps
+# ----------------------------
 RUN composer install --no-dev --optimize-autoloader
 
+# ----------------------------
 # Frontend build
+# ----------------------------
 RUN npm install && npm run build
 
 EXPOSE 8080
 
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8080
-
+# ----------------------------
+# Start app (Railway)
+# ----------------------------
+CMD php artisan key:generate --force \
+ && php artisan migrate --force \
+ && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
